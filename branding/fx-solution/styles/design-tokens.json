@@ -1,0 +1,111 @@
+{
+  "name": "FX Solution",
+  "scope": "Identidade visual e apresentação",
+  "sourceRevision": "e2748be9d27a435af245c0fccc0f6b952b909361",
+  "color": {
+    "background": "#101113",
+    "sidebar": "#141518",
+    "panel": "#181A1E",
+    "border": "#2A2C32",
+    "text": "#ECEDEF",
+    "muted": "#989DA8",
+    "accent": "#DF4650",
+    "accentSoft": "#F1848C",
+    "focus": "#F68A93",
+    "inputBg": "#121417",
+    "inputText": "#E9EBEF",
+    "inputBorder": "#33363D",
+    "buttonBg": "#212328",
+    "buttonBorder": "#35383F",
+    "buttonHover": "#2C2F35",
+    "buttonHoverBorder": "#5B606A",
+    "buttonText": "#FFFFFF",
+    "icon": "#A6ACB6",
+    "faviconAccent": "#E46674",
+    "successText": "#79C4A0",
+    "successBg": "#2D855317",
+    "successBorder": "#36755245",
+    "warningText": "#D9BA80",
+    "warningBg": "#A8822111",
+    "warningBorder": "#8F73322D",
+    "errorText": "#F18B94",
+    "errorBg": "#DF465015",
+    "errorBorder": "#9C434642",
+    "modalBg": "#1B2028",
+    "modalText": "#DEE5EF",
+    "modalBorder": "#4A5261",
+    "modalLabel": "#AFBCCF",
+    "loginBg": "#111215",
+    "loginHeading": "#F0ECEF",
+    "loginMuted": "#888793",
+    "loginInput": "#19191E",
+    "artHeading": "#E8DCE2",
+    "artAccent": "#D57A92",
+    "artText": "#90818C",
+    "chartSecondary": "#758393",
+    "messageIn": "#272F39",
+    "messageOut": "#402E39",
+    "messageText": "#CAD2DE",
+    "flowEdge": "#B45460",
+    "flowGrid": "#353941"
+  },
+  "font": {
+    "ui": {
+      "family": "Outfit",
+      "weights": [
+        300,
+        400,
+        500,
+        600,
+        700
+      ]
+    },
+    "technical": {
+      "family": "IBM Plex Mono",
+      "weights": [
+        400,
+        500
+      ]
+    }
+  },
+  "radius": {
+    "button": 7,
+    "input": 7,
+    "badge": 4,
+    "panel": 11,
+    "modal": 13,
+    "flowNode": 9
+  },
+  "layout": {
+    "sidebar": 225,
+    "topbar": 72,
+    "workspacePadding": [
+      34,
+      32,
+      25
+    ],
+    "panelPadding": 24,
+    "modalWidth": 640,
+    "loginFormMaxWidth": 365
+  },
+  "breakpoints": {
+    "wideMin": 1600,
+    "compactMax": 1250,
+    "tabletMax": 1000,
+    "mobileMax": 760,
+    "adsMobileMax": 600
+  },
+  "motion": {
+    "buttonMs": 180,
+    "pageMs": 350,
+    "drawerMs": 250,
+    "perspectiveMs": 700,
+    "spinnerMs": 1000
+  },
+  "perspective": {
+    "distance": 1300,
+    "rotateX": 18,
+    "rotateY": -10,
+    "scale": 0.94
+  }
+}

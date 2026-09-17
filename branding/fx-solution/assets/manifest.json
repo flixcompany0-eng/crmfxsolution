@@ -1,0 +1,94 @@
+[
+  {
+    "file": "assets/favicon.svg",
+    "bytes": 261,
+    "sha256": "47ad6c2929c3887c9e7ef23dac4d3e28458e266de2f2f7f55d69b0b1a7069fc7",
+    "origin": "arquivo original do projeto"
+  },
+  {
+    "file": "assets/fx-brand.webp",
+    "bytes": 129398,
+    "sha256": "91f82032f9a754f70a8c9d145c2fea815f99e448b6b4426ef03dedd370ad456e",
+    "width": 1400,
+    "height": 1738,
+    "origin": "arquivo original do projeto"
+  },
+  {
+    "file": "assets/fx-cover.webp",
+    "bytes": 73496,
+    "sha256": "f7cef92587adb9ce45df46d53f352c7e07c35a52c80fb5f326d85c26ad3a90ac",
+    "width": 1800,
+    "height": 1200,
+    "origin": "arquivo original do projeto"
+  },
+  {
+    "file": "assets/fx-logo-horizontal.svg",
+    "bytes": 15025,
+    "sha256": "fda4a85c02b4c73463ff1a2bf498c3328867874c23c6827d2e076e21c1dc88b6",
+    "origin": "assinatura convertida em curvas para o kit"
+  },
+  {
+    "file": "assets/fx-og.webp",
+    "bytes": 30848,
+    "sha256": "35927b66a9df9ff6e73ac08426b9b93b4adc49a2804e59607a8ac6975de58507",
+    "width": 1200,
+    "height": 630,
+    "origin": "arquivo original do projeto"
+  },
+  {
+    "file": "assets/fx-symbol-coral.svg",
+    "bytes": 280,
+    "sha256": "41c7c249cb4b943fb29d7942022aaeb212b53b9eeba8debe468e2c578c857d6b",
+    "origin": "símbolo extraído do componente da interface"
+  },
+  {
+    "file": "assets/fx-symbol-light.svg",
+    "bytes": 280,
+    "sha256": "fb94ca60e863e5e08b407925bf1f0d9a8ea15f0ad9455c31933a5776a5a9a485",
+    "origin": "símbolo extraído do componente da interface"
+  },
+  {
+    "file": "assets/fx-symbol-ui.svg",
+    "bytes": 290,
+    "sha256": "e0486b22f4bedf8f7e6ccf833fb5634cb5b8e5b27613c3a79f068a2e413c0ce7",
+    "origin": "símbolo extraído do componente da interface"
+  },
+  {
+    "file": "assets/icon-180.png",
+    "bytes": 72680,
+    "sha256": "d19afc248d99762ab4b91f83096aad5dee4937d3c1e51324365f1183df62c1d3",
+    "width": 180,
+    "height": 180,
+    "origin": "arquivo original do projeto"
+  },
+  {
+    "file": "assets/icon-192.png",
+    "bytes": 78305,
+    "sha256": "4198e74a6d907cb371fd8845a386ab7c21a559c64e5e132cf0882351eae30b4a",
+    "width": 192,
+    "height": 192,
+    "origin": "arquivo original do projeto"
+  },
+  {
+    "file": "assets/icon-32.png",
+    "bytes": 4389,
+    "sha256": "1caddb385c1347c5de8b6c4355f7aae8038c9dd7dbadc5ad07a7eaa51389b2c3",
+    "width": 32,
+    "height": 32,
+    "origin": "arquivo original do projeto"
+  },
+  {
+    "file": "assets/icon-512.png",
+    "bytes": 489613,
+    "sha256": "85fe1d8fe694156fd70f55022ec4ac2047d9ed060ad9c092dce4740e316a0515",
+    "width": 512,
+    "height": 512,
+    "origin": "arquivo original do projeto"
+  },
+  {
+    "file": "assets/site.webmanifest",
+    "bytes": 444,
+    "sha256": "3d62ce910594a5a5bbad383d01cc6f4ffe26c5c532e0ab4346da3125a43774f5",
+    "origin": "arquivo original do projeto"
+  }
+]
