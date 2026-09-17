@@ -1,0 +1,1 @@
+Temporary bootstrap for FX Solution. This commit will be replaced automatically.
