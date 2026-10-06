@@ -53,7 +53,12 @@ export function PublishBar({ flowId, flow, graph, dirty, onSaved, onPublishError
   const handoffPolicy = useUpdateHandoffPolicy(flowId);
 
   const onSave = () => {
-    save.mutate(graph, { onSuccess: () => onSaved(graph) });
+    save.mutate(graph, {
+      onSuccess: () => {
+        onSaved(graph);
+        toast.success(t("Rascunho salvo."));
+      },
+    });
   };
 
   const onPublish = async () => {

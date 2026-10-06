@@ -46,7 +46,7 @@ export function useFollowupFlow(id: string, opts?: { initialData?: FollowupFlowD
   });
 }
 
-/** PATCH draft_graph — "Salvar". Errors handled by the caller (dirty-state UI), no toast noise. */
+/** PATCH draft_graph — manual save and the save before publishing. Success feedback belongs to the caller. */
 export function useSaveFollowupFlowDraft(id: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -60,7 +60,6 @@ export function useSaveFollowupFlowDraft(id: string) {
       qc.setQueryData<FollowupFlowDetailRow>(followupFlowQueryKey(id), (prev) =>
         prev ? { ...prev, ...updated } : prev,
       );
-      toast.success("Rascunho salvo.");
     },
     onError: (err) => showApiError(err),
   });

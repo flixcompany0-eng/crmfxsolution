@@ -8,20 +8,50 @@ permissions:
   contents: read
 jobs:
   checks:
+    name: checks (${{ matrix.variante }})
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        variante:
+        - base
+        - head
+        - jsdom-antigo
+        - correcao
     steps:
     - uses: actions/checkout@v7
       with:
-        ref: 3b26f30393570bbd022f60fc8680f6f477393260
+        fetch-depth: 5
+    - name: Manter código original nos controles
+      if: matrix.variante != 'correcao'
+      run: 'git restore --source=3b26f30393570bbd022f60fc8680f6f477393260 -- hooks/followup/useFollowupFlow.ts app/app/ai/followups/\[id\]/_components/PublishBar.tsx
+
+        rm -f .changes/followup-publicar-sem-aviso-de-rascunho-20261006.md'
+    - name: Excluir somente o instrumento temporário da leitura dos unitários
+      run: rm -f .github/workflows/audit-pr4-e2e-parte2.yml
+    - name: Controle com o lockfile original da base
+      if: matrix.variante == 'base'
+      run: 'git show c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json > package.json
+
+        git show c79f64e481f4d5db9c1922c639f751e4d5d635e2:pnpm-lock.yaml > pnpm-lock.yaml'
     - uses: ./.github/actions/preparar-node
       timeout-minutes: 5
+    - name: Reter somente o grupo sob teste e conferir as demais dependências
+      run: "set -euo pipefail\npnpm list --depth 0 --json > /tmp/deps-antes.json\nVARIANTE=\"${{ matrix.variante }}\" node <<'JS'\nconst fs = require('node:fs');\nconst { execFileSync } = require('node:child_process');\nconst p = JSON.parse(fs.readFileSync('package.json', 'utf8'));\nconst b = JSON.parse(execFileSync('git', ['show', 'c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json'], { encoding: 'utf8' }));\nconst grupos = {\n  'playwright-antigo': ['@playwright/test'],\n  'react-antigo': ['react', 'react-dom', '@types/react', '@types/react-dom'],\n  'canvas-antigo': ['@xyflow/react'],\n  'jsdom-antigo': ['jsdom'],\n  'query-antigo': ['@tanstack/react-query', '@tanstack/react-query-devtools'],\n};\nconst grupo = grupos[process.env.VARIANTE] || [];\nfor (const nome of grupo) {\n  const secao = nome in p.dependencies ? 'dependencies' : 'devDependencies';\n  p[secao][nome] = b[secao][nome].replace(/^\\^/, '');\n}\nfs.writeFileSync('/tmp/grupo-retido.json', JSON.stringify(grupo));\nfs.writeFileSync('package.json',\
+        \ JSON.stringify(p, null, 2) + '\\n');\nJS\ncase \"${{ matrix.variante }}\" in\n  *-antigo) pnpm install --no-frozen-lockfile ;;\nesac\npnpm list --depth 0 --json > /tmp/deps-depois.json\nnode <<'JS'\nconst fs = require('node:fs');\nconst antes = JSON.parse(fs.readFileSync('/tmp/deps-antes.json', 'utf8'))[0];\nconst depois = JSON.parse(fs.readFileSync('/tmp/deps-depois.json', 'utf8'))[0];\nconst grupo = new Set(JSON.parse(fs.readFileSync('/tmp/grupo-retido.json', 'utf8')));\nfor (const secao of ['dependencies', 'devDependencies']) {\n  for (const [nome, dep] of Object.entries(antes[secao] || {})) {\n    if (!grupo.has(nome) && dep.version !== depois[secao][nome].version)\n      throw new Error(`Dependencia fora do grupo mudou: ${nome} ${dep.version} -> ${depois[secao][nome].version}`);\n  }\n}\nJS\nmkdir -p audit-deps\ncp package.json pnpm-lock.yaml /tmp/deps-antes.json /tmp/deps-depois.json /tmp/grupo-retido.json audit-deps/\n"
     - name: Typecheck
       run: pnpm typecheck
     - name: Lint
       run: pnpm lint
-    - name: Unitários completos, independentes do gate Windsor
+    - name: Unitários completos, com fixtures e credenciais sintéticas dos testes
       run: pnpm test:unit
+    - uses: actions/upload-artifact@v7
+      if: always()
+      with:
+        name: audit-pr4-checks-${{ matrix.variante }}
+        path: audit-deps/
+        retention-days: 7
   isolar:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -35,6 +65,7 @@ jobs:
         - react-antigo
         - canvas-antigo
         - query-antigo
+        - correcao
     env:
       INTERNAL_AGENT_RUN_STUB: 'true'
       SPECS_PARTE_1: pre-go-live-whatsapp.spec.ts smoke.spec.ts auth.spec.ts error-pages.spec.ts icone-da-marca.spec.ts password-recovery.spec.ts signup-journey.spec.ts primeiro-acesso-sem-organizacao.spec.ts rbac-roles.spec.ts inbox-scope.spec.ts reset-password-mfa.spec.ts degradacao-silenciosa.spec.ts vps-webhook-outbound-ssrf.spec.ts kanban-owner-filter.spec.ts queue-assign.spec.ts conversa-vira-lead.spec.ts contato-salva-email.spec.ts confirmar-dado-do-contato.spec.ts credenciais-de-ia.spec.ts risk-radar.spec.ts invite-lifecycle.spec.ts system-update.spec.ts agente-papeis-operador.spec.ts prova-painel-provedores.spec.ts followup-linguagem.spec.ts followup-ramos.spec.ts wizard-do-funcionario.spec.ts mfa-opcional.spec.ts inbox-responder-citando.spec.ts agenda-tela-do-produto.spec.ts notificacoes-diz-o-que-falta.spec.ts relogio-http-cron-externo.spec.ts j20-elegibilidade-respondi.spec.ts j20-elegibilidade-followup.spec.ts j20-elegibilidade-atendimento-manual.spec.ts navegacao.spec.ts juntar-contatos-duplicados.spec.ts
@@ -47,6 +78,11 @@ jobs:
     - uses: actions/checkout@v7
       with:
         fetch-depth: 3
+    - name: Manter código original nos controles
+      if: matrix.variante != 'correcao'
+      run: 'git restore --source=3b26f30393570bbd022f60fc8680f6f477393260 -- hooks/followup/useFollowupFlow.ts app/app/ai/followups/\[id\]/_components/PublishBar.tsx
+
+        rm -f .changes/followup-publicar-sem-aviso-de-rascunho-20261006.md'
     - name: Controle com o lockfile original da base
       if: matrix.variante == 'base'
       run: 'git show c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json > package.json
@@ -55,8 +91,8 @@ jobs:
     - uses: ./.github/actions/preparar-node
       timeout-minutes: 5
     - name: Reter somente o grupo sob teste e conferir as demais dependências
-      run: "set -euo pipefail\npnpm list --depth 0 --json > /tmp/deps-antes.json\nVARIANTE=\"${{ matrix.variante }}\" node <<'JS'\nconst fs = require('node:fs');\nconst { execFileSync } = require('node:child_process');\nconst p = JSON.parse(fs.readFileSync('package.json', 'utf8'));\nconst b = JSON.parse(execFileSync('git', ['show', 'c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json'], { encoding: 'utf8' }));\nconst grupos = {\n  'playwright-antigo': ['@playwright/test'],\n  'react-antigo': ['react', 'react-dom', '@types/react', '@types/react-dom'],\n  'canvas-antigo': ['@xyflow/react'],\n  'query-antigo': ['@tanstack/react-query', '@tanstack/react-query-devtools'],\n};\nconst grupo = grupos[process.env.VARIANTE] || [];\nfor (const nome of grupo) {\n  const secao = nome in p.dependencies ? 'dependencies' : 'devDependencies';\n  p[secao][nome] = b[secao][nome].replace(/^\\^/, '');\n}\nfs.writeFileSync('/tmp/grupo-retido.json', JSON.stringify(grupo));\nfs.writeFileSync('package.json', JSON.stringify(p,\
-        \ null, 2) + '\\n');\nJS\ncase \"${{ matrix.variante }}\" in\n  *-antigo) pnpm install --no-frozen-lockfile ;;\nesac\npnpm list --depth 0 --json > /tmp/deps-depois.json\nnode <<'JS'\nconst fs = require('node:fs');\nconst antes = JSON.parse(fs.readFileSync('/tmp/deps-antes.json', 'utf8'))[0];\nconst depois = JSON.parse(fs.readFileSync('/tmp/deps-depois.json', 'utf8'))[0];\nconst grupo = new Set(JSON.parse(fs.readFileSync('/tmp/grupo-retido.json', 'utf8')));\nfor (const secao of ['dependencies', 'devDependencies']) {\n  for (const [nome, dep] of Object.entries(antes[secao] || {})) {\n    if (!grupo.has(nome) && dep.version !== depois[secao][nome].version)\n      throw new Error(`Dependencia fora do grupo mudou: ${nome} ${dep.version} -> ${depois[secao][nome].version}`);\n  }\n}\nJS\nmkdir -p audit-deps\ncp package.json pnpm-lock.yaml /tmp/deps-antes.json /tmp/deps-depois.json /tmp/grupo-retido.json audit-deps/\n"
+      run: "set -euo pipefail\npnpm list --depth 0 --json > /tmp/deps-antes.json\nVARIANTE=\"${{ matrix.variante }}\" node <<'JS'\nconst fs = require('node:fs');\nconst { execFileSync } = require('node:child_process');\nconst p = JSON.parse(fs.readFileSync('package.json', 'utf8'));\nconst b = JSON.parse(execFileSync('git', ['show', 'c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json'], { encoding: 'utf8' }));\nconst grupos = {\n  'playwright-antigo': ['@playwright/test'],\n  'react-antigo': ['react', 'react-dom', '@types/react', '@types/react-dom'],\n  'canvas-antigo': ['@xyflow/react'],\n  'jsdom-antigo': ['jsdom'],\n  'query-antigo': ['@tanstack/react-query', '@tanstack/react-query-devtools'],\n};\nconst grupo = grupos[process.env.VARIANTE] || [];\nfor (const nome of grupo) {\n  const secao = nome in p.dependencies ? 'dependencies' : 'devDependencies';\n  p[secao][nome] = b[secao][nome].replace(/^\\^/, '');\n}\nfs.writeFileSync('/tmp/grupo-retido.json', JSON.stringify(grupo));\nfs.writeFileSync('package.json',\
+        \ JSON.stringify(p, null, 2) + '\\n');\nJS\ncase \"${{ matrix.variante }}\" in\n  *-antigo) pnpm install --no-frozen-lockfile ;;\nesac\npnpm list --depth 0 --json > /tmp/deps-depois.json\nnode <<'JS'\nconst fs = require('node:fs');\nconst antes = JSON.parse(fs.readFileSync('/tmp/deps-antes.json', 'utf8'))[0];\nconst depois = JSON.parse(fs.readFileSync('/tmp/deps-depois.json', 'utf8'))[0];\nconst grupo = new Set(JSON.parse(fs.readFileSync('/tmp/grupo-retido.json', 'utf8')));\nfor (const secao of ['dependencies', 'devDependencies']) {\n  for (const [nome, dep] of Object.entries(antes[secao] || {})) {\n    if (!grupo.has(nome) && dep.version !== depois[secao][nome].version)\n      throw new Error(`Dependencia fora do grupo mudou: ${nome} ${dep.version} -> ${depois[secao][nome].version}`);\n  }\n}\nJS\nmkdir -p audit-deps\ncp package.json pnpm-lock.yaml /tmp/deps-antes.json /tmp/deps-depois.json /tmp/grupo-retido.json audit-deps/\n"
     - uses: supabase/setup-cli@v3
       with:
         version: latest
@@ -127,12 +163,15 @@ jobs:
         pnpm exec tsx scripts/seed-e2e-catalogo-openrouter.ts
 
         '
-    - name: Reproduzir o teste que falhou, três vezes, sem retry
-      run: 'pnpm exec playwright test tests/e2e/followup-builder.spec.ts --grep "fluxo completo: montar" --repeat-each=3 --reporter=line,html'
+    - name: Executar a parte 2 inteira, sem retry e com a mesma lista do CI
+      run: 'set -euo pipefail
+
+        [ -n "$SPECS_PARTE_2" ]
+
+        pnpm exec playwright test --workers=1 $SPECS_PARTE_2 --reporter=list,html'
       env:
-        AUTH_RATE_LIMIT_LOGIN_IP: '10000'
+        AUTH_RATE_LIMIT_LOGIN_IP: '1000'
         SENTRY_DSN: 'off'
-        AUTH_RATE_LIMIT_LOGIN_IDENT: '10000'
     - uses: actions/upload-artifact@v7
       if: always()
       with:
