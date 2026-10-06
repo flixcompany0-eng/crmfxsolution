@@ -1,5 +1,5 @@
 # Workflow temporário de investigação. Não altera os gates do PR #4.
-name: Auditoria PR4 — isolamento E2E parte 2
+name: Auditoria PR4 — repetição controlada do clique Publicar
 'on':
   push:
     branches:
@@ -18,8 +18,6 @@ jobs:
         - head
         - playwright-antigo
         - react-antigo
-        - canvas-antigo
-        - query-antigo
         - correcao
     env:
       INTERNAL_AGENT_RUN_STUB: 'true'
@@ -118,12 +116,8 @@ jobs:
         pnpm exec tsx scripts/seed-e2e-catalogo-openrouter.ts
 
         '
-    - name: Executar a parte 2 inteira, sem retry e com a mesma lista do CI
-      run: 'set -euo pipefail
-
-        [ -n "$SPECS_PARTE_2" ]
-
-        pnpm exec playwright test --workers=1 $SPECS_PARTE_2 --reporter=list,html'
+    - name: Repetir o cenário original 20 vezes, sem retry
+      run: 'pnpm exec playwright test tests/e2e/followup-builder.spec.ts --grep "fluxo completo: montar" --repeat-each=20 --retries=0 --reporter=line,html'
       env:
         AUTH_RATE_LIMIT_LOGIN_IP: '1000'
         SENTRY_DSN: 'off'
