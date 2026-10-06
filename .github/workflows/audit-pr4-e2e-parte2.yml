@@ -1,5 +1,5 @@
 # Workflow temporário de investigação. Não altera os gates do PR #4.
-name: Auditoria PR4 — somente Playwright novo sobre a base
+name: Auditoria PR4 — interações do Playwright com o runtime
 'on':
   push:
     branches:
@@ -14,7 +14,12 @@ jobs:
       fail-fast: false
       matrix:
         variante:
-        - playwright-novo-na-base
+        - base-novo-next
+        - base-novo-query
+        - base-novo-canvas
+        - base-novo-supabase
+        - base-novo-zod
+        - head-antigo-next-e-react
     env:
       INTERNAL_AGENT_RUN_STUB: 'true'
       SPECS_PARTE_1: pre-go-live-whatsapp.spec.ts smoke.spec.ts auth.spec.ts error-pages.spec.ts icone-da-marca.spec.ts password-recovery.spec.ts signup-journey.spec.ts primeiro-acesso-sem-organizacao.spec.ts rbac-roles.spec.ts inbox-scope.spec.ts reset-password-mfa.spec.ts degradacao-silenciosa.spec.ts vps-webhook-outbound-ssrf.spec.ts kanban-owner-filter.spec.ts queue-assign.spec.ts conversa-vira-lead.spec.ts contato-salva-email.spec.ts confirmar-dado-do-contato.spec.ts credenciais-de-ia.spec.ts risk-radar.spec.ts invite-lifecycle.spec.ts system-update.spec.ts agente-papeis-operador.spec.ts prova-painel-provedores.spec.ts followup-linguagem.spec.ts followup-ramos.spec.ts wizard-do-funcionario.spec.ts mfa-opcional.spec.ts inbox-responder-citando.spec.ts agenda-tela-do-produto.spec.ts notificacoes-diz-o-que-falta.spec.ts relogio-http-cron-externo.spec.ts j20-elegibilidade-respondi.spec.ts j20-elegibilidade-followup.spec.ts j20-elegibilidade-atendimento-manual.spec.ts navegacao.spec.ts juntar-contatos-duplicados.spec.ts
@@ -33,16 +38,16 @@ jobs:
 
         rm -f .changes/followup-publicar-sem-aviso-de-rascunho-20261006.md'
     - name: Controle com o lockfile original da base
-      if: matrix.variante == 'playwright-novo-na-base'
+      if: startsWith(matrix.variante, 'base-novo-')
       run: 'git show c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json > package.json
 
         git show c79f64e481f4d5db9c1922c639f751e4d5d635e2:pnpm-lock.yaml > pnpm-lock.yaml'
     - uses: ./.github/actions/preparar-node
       timeout-minutes: 5
-    - name: Atualizar só Playwright na base e conferir os demais pacotes
-      run: "set -euo pipefail\npnpm list --depth 0 --json > /tmp/deps-antes.json\nVARIANTE=\"${{ matrix.variante }}\" node <<'JS'\nconst fs = require('node:fs');\nconst { execFileSync } = require('node:child_process');\nconst p = JSON.parse(fs.readFileSync('package.json', 'utf8'));\nconst b = JSON.parse(execFileSync('git', ['show', 'c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json'], { encoding: 'utf8' }));\nconst grupos = {\n  'playwright-novo-na-base': ['@playwright/test'],\n  'playwright-antigo': ['@playwright/test'],\n  'react-antigo': ['react', 'react-dom', '@types/react', '@types/react-dom'],\n  'canvas-antigo': ['@xyflow/react'],\n  'jsdom-antigo': ['jsdom'],\n  'query-antigo': ['@tanstack/react-query', '@tanstack/react-query-devtools'],\n};\nconst grupo = grupos[process.env.VARIANTE] || [];\nfor (const nome of grupo) {\n  const secao = nome in p.dependencies ? 'dependencies' : 'devDependencies';\n  p[secao][nome] = (process.env.VARIANTE === 'playwright-novo-na-base' ? JSON.parse(execFileSync('git',\
-        \ ['show', '3b26f30393570bbd022f60fc8680f6f477393260:package.json'], { encoding: 'utf8' })) : b)[secao][nome].replace(/^\\^/, '');\n}\nfs.writeFileSync('/tmp/grupo-retido.json', JSON.stringify(grupo));\nfs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\\n');\nJS\ncase \"${{ matrix.variante }}\" in\n  *-antigo|playwright-novo-na-base) pnpm install --no-frozen-lockfile ;;\nesac\npnpm list --depth 0 --json > /tmp/deps-depois.json\nnode <<'JS'\nconst fs = require('node:fs');\nconst antes = JSON.parse(fs.readFileSync('/tmp/deps-antes.json', 'utf8'))[0];\nconst depois = JSON.parse(fs.readFileSync('/tmp/deps-depois.json', 'utf8'))[0];\nconst grupo = new Set(JSON.parse(fs.readFileSync('/tmp/grupo-retido.json', 'utf8')));\nfor (const secao of ['dependencies', 'devDependencies']) {\n  for (const [nome, dep] of Object.entries(antes[secao] || {})) {\n    if (!grupo.has(nome) && dep.version !== depois[secao][nome].version)\n      throw new Error(`Dependencia fora do grupo mudou:\
-        \ ${nome} ${dep.version} -> ${depois[secao][nome].version}`);\n  }\n}\nJS\nmkdir -p audit-deps\ncp package.json pnpm-lock.yaml /tmp/deps-antes.json /tmp/deps-depois.json /tmp/grupo-retido.json audit-deps/\n"
+    - name: Aplicar a combinação sob teste e conferir os demais pacotes
+      run: "set -euo pipefail\npnpm list --depth 0 --json > /tmp/deps-antes.json\nVARIANTE=\"${{ matrix.variante }}\" node <<'JS'\nconst fs = require('node:fs');\nconst { execFileSync } = require('node:child_process');\nconst p = JSON.parse(fs.readFileSync('package.json', 'utf8'));\nconst b = JSON.parse(execFileSync('git', ['show', 'c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json'], { encoding: 'utf8' }));\nconst grupos = {\n  'base-novo-next': ['@playwright/test', 'next'],\n  'base-novo-query': ['@playwright/test', '@tanstack/react-query', '@tanstack/react-query-devtools'],\n  'base-novo-canvas': ['@playwright/test', '@xyflow/react'],\n  'base-novo-supabase': ['@playwright/test', '@supabase/ssr', '@supabase/supabase-js'],\n  'base-novo-zod': ['@playwright/test', 'zod'],\n  'head-antigo-next-e-react': ['next', 'react', 'react-dom', '@types/react', '@types/react-dom'],\n  'playwright-antigo': ['@playwright/test'],\n  'react-antigo': ['react', 'react-dom', '@types/react', '@types/react-dom'],\n\
+        \  'canvas-antigo': ['@xyflow/react'],\n  'jsdom-antigo': ['jsdom'],\n  'query-antigo': ['@tanstack/react-query', '@tanstack/react-query-devtools'],\n};\nconst grupo = grupos[process.env.VARIANTE] || [];\nfor (const nome of grupo) {\n  const secao = nome in p.dependencies ? 'dependencies' : 'devDependencies';\n  p[secao][nome] = (process.env.VARIANTE.startsWith('base-novo-') ? JSON.parse(execFileSync('git', ['show', '3b26f30393570bbd022f60fc8680f6f477393260:package.json'], { encoding: 'utf8' })) : b)[secao][nome].replace(/^\\^/, '');\n}\nfs.writeFileSync('/tmp/grupo-retido.json', JSON.stringify(grupo));\nfs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\\n');\nJS\ncase \"${{ matrix.variante }}\" in\n  *-antigo|base-novo-*|head-antigo-*) pnpm install --no-frozen-lockfile ;;\nesac\npnpm list --depth 0 --json > /tmp/deps-depois.json\nnode <<'JS'\nconst fs = require('node:fs');\nconst antes = JSON.parse(fs.readFileSync('/tmp/deps-antes.json', 'utf8'))[0];\nconst depois\
+        \ = JSON.parse(fs.readFileSync('/tmp/deps-depois.json', 'utf8'))[0];\nconst grupo = new Set(JSON.parse(fs.readFileSync('/tmp/grupo-retido.json', 'utf8')));\nfor (const secao of ['dependencies', 'devDependencies']) {\n  for (const [nome, dep] of Object.entries(antes[secao] || {})) {\n    if (!grupo.has(nome) && dep.version !== depois[secao][nome].version)\n      throw new Error(`Dependencia fora do grupo mudou: ${nome} ${dep.version} -> ${depois[secao][nome].version}`);\n  }\n}\nJS\nmkdir -p audit-deps\ncp package.json pnpm-lock.yaml /tmp/deps-antes.json /tmp/deps-depois.json /tmp/grupo-retido.json audit-deps/\n"
     - uses: supabase/setup-cli@v3
       with:
         version: latest
