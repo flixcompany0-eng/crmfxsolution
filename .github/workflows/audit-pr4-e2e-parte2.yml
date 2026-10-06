@@ -1,0 +1,148 @@
+# Workflow temporário de investigação. Não altera os gates do PR #4.
+name: Auditoria PR4 — isolamento E2E parte 2
+'on':
+  push:
+    branches:
+    - codex/audit-pr4-e2e-parte2-20261006
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        ref: 3b26f30393570bbd022f60fc8680f6f477393260
+    - uses: ./.github/actions/preparar-node
+      timeout-minutes: 5
+    - name: Typecheck
+      run: pnpm typecheck
+    - name: Lint
+      run: pnpm lint
+    - name: Unitários completos, independentes do gate Windsor
+      run: pnpm test:unit
+  isolar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        variante:
+        - base
+        - head
+        - playwright-antigo
+        - react-antigo
+        - canvas-antigo
+        - query-antigo
+    env:
+      INTERNAL_AGENT_RUN_STUB: 'true'
+      SPECS_PARTE_1: pre-go-live-whatsapp.spec.ts smoke.spec.ts auth.spec.ts error-pages.spec.ts icone-da-marca.spec.ts password-recovery.spec.ts signup-journey.spec.ts primeiro-acesso-sem-organizacao.spec.ts rbac-roles.spec.ts inbox-scope.spec.ts reset-password-mfa.spec.ts degradacao-silenciosa.spec.ts vps-webhook-outbound-ssrf.spec.ts kanban-owner-filter.spec.ts queue-assign.spec.ts conversa-vira-lead.spec.ts contato-salva-email.spec.ts confirmar-dado-do-contato.spec.ts credenciais-de-ia.spec.ts risk-radar.spec.ts invite-lifecycle.spec.ts system-update.spec.ts agente-papeis-operador.spec.ts prova-painel-provedores.spec.ts followup-linguagem.spec.ts followup-ramos.spec.ts wizard-do-funcionario.spec.ts mfa-opcional.spec.ts inbox-responder-citando.spec.ts agenda-tela-do-produto.spec.ts notificacoes-diz-o-que-falta.spec.ts relogio-http-cron-externo.spec.ts j20-elegibilidade-respondi.spec.ts j20-elegibilidade-followup.spec.ts j20-elegibilidade-atendimento-manual.spec.ts navegacao.spec.ts juntar-contatos-duplicados.spec.ts
+        lote-no-quadro-do-funil.spec.ts importar-leads-planilha.spec.ts relatorio-de-atividades.spec.ts
+      SPECS_PARTE_2: agente-marca-consulta.spec.ts agenda-marcar-pela-tela.spec.ts agenda-remarcar-e-cancelar.spec.ts agenda-tipos-de-agendamento.spec.ts agenda-grade-interativa.spec.ts agente-novo-e-uso.spec.ts agente-organiza-operacao.spec.ts central-de-avisos-capacidades.spec.ts escalacao-ciclo.spec.ts followup-builder.spec.ts followup-queue.spec.ts distribuicao-atendimento.spec.ts followup-journey.spec.ts capacidades-do-agente.spec.ts escopo-de-funil-do-agente.spec.ts followup-dossie.spec.ts followup-tempo-adaptativo.spec.ts gatilho-de-etapa.spec.ts gatilho-de-caso.spec.ts agenda-ocupacao-do-google-na-grade.spec.ts agenda-ocupacao-do-google-no-historico.spec.ts followup-publicado-abre-no-construtor.spec.ts automacao-diz-a-verdade.spec.ts acervo-de-conhecimento.spec.ts agenda-kit-visual.spec.ts agenda-conectar-google.spec.ts agenda-painel-cabe-na-tela.spec.ts agenda-ver-na-agenda.spec.ts agenda-escopo-da-organizacao.spec.ts agenda-caminho-ate-os-horarios.spec.ts agenda-google-volta-do-consentimento.spec.ts
+        agenda-google-volta-nao-desloga.spec.ts
+      SPECS_PARTE_3: autonomia-assistida.spec.ts roteamento-por-canal.spec.ts central-avisos-destino.spec.ts agenda-presenca-recuperacao.spec.ts agenda-google-sync.spec.ts agenda-google-meet.spec.ts encerramento-atendimento.spec.ts interface-por-vinculo.spec.ts olhar-telas-do-epico.spec.ts pipelines-gestao.spec.ts qa-agente-usa-as-maos.spec.ts qa-selo-no-funil-usado.spec.ts qa-telas-descobertas-w4.spec.ts retorno-anti-morte.spec.ts webhooks.spec.ts marca-logo.spec.ts historico-de-captacao.spec.ts inbox-quem-manda.spec.ts troca-de-organizacao-tem-volta.spec.ts organizacoes-criacao-convite-e-cache.spec.ts suporte-temporario.spec.ts i18n-espanhol-na-tela.spec.ts inbox-abas-espelham-o-comando.spec.ts moeda-da-organizacao.spec.ts zona-de-perigo-apaga-dados-de-teste.spec.ts central-avisos-resolver-em-lote.spec.ts
+      FORA_DO_CI: vps-fresh-onboarding.spec.ts inbox-tempo-real.spec.ts cadastro-sem-confirmacao-de-email.spec.ts
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 3
+    - name: Controle com o lockfile original da base
+      if: matrix.variante == 'base'
+      run: 'git show c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json > package.json
+
+        git show c79f64e481f4d5db9c1922c639f751e4d5d635e2:pnpm-lock.yaml > pnpm-lock.yaml'
+    - uses: ./.github/actions/preparar-node
+      timeout-minutes: 5
+    - name: Reter somente o grupo sob teste e conferir as demais dependências
+      run: "set -euo pipefail\npnpm list --depth 0 --json > /tmp/deps-antes.json\nVARIANTE=\"${{ matrix.variante }}\" node <<'JS'\nconst fs = require('node:fs');\nconst { execFileSync } = require('node:child_process');\nconst p = JSON.parse(fs.readFileSync('package.json', 'utf8'));\nconst b = JSON.parse(execFileSync('git', ['show', 'c79f64e481f4d5db9c1922c639f751e4d5d635e2:package.json'], { encoding: 'utf8' }));\nconst grupos = {\n  'playwright-antigo': ['@playwright/test'],\n  'react-antigo': ['react', 'react-dom', '@types/react', '@types/react-dom'],\n  'canvas-antigo': ['@xyflow/react'],\n  'query-antigo': ['@tanstack/react-query', '@tanstack/react-query-devtools'],\n};\nconst grupo = grupos[process.env.VARIANTE] || [];\nfor (const nome of grupo) {\n  const secao = nome in p.dependencies ? 'dependencies' : 'devDependencies';\n  p[secao][nome] = b[secao][nome].replace(/^\\^/, '');\n}\nfs.writeFileSync('/tmp/grupo-retido.json', JSON.stringify(grupo));\nfs.writeFileSync('package.json', JSON.stringify(p,\
+        \ null, 2) + '\\n');\nJS\ncase \"${{ matrix.variante }}\" in\n  *-antigo) pnpm install --no-frozen-lockfile ;;\nesac\npnpm list --depth 0 --json > /tmp/deps-depois.json\nnode <<'JS'\nconst fs = require('node:fs');\nconst antes = JSON.parse(fs.readFileSync('/tmp/deps-antes.json', 'utf8'))[0];\nconst depois = JSON.parse(fs.readFileSync('/tmp/deps-depois.json', 'utf8'))[0];\nconst grupo = new Set(JSON.parse(fs.readFileSync('/tmp/grupo-retido.json', 'utf8')));\nfor (const secao of ['dependencies', 'devDependencies']) {\n  for (const [nome, dep] of Object.entries(antes[secao] || {})) {\n    if (!grupo.has(nome) && dep.version !== depois[secao][nome].version)\n      throw new Error(`Dependencia fora do grupo mudou: ${nome} ${dep.version} -> ${depois[secao][nome].version}`);\n  }\n}\nJS\nmkdir -p audit-deps\ncp package.json pnpm-lock.yaml /tmp/deps-antes.json /tmp/deps-depois.json /tmp/grupo-retido.json audit-deps/\n"
+    - uses: supabase/setup-cli@v3
+      with:
+        version: latest
+    - name: Subir Supabase local (sem a cadeia de migrations)
+      run: 'mv supabase/migrations /tmp/migrations-off
+
+        mkdir -p supabase/migrations
+
+        supabase start
+
+        '
+    - name: Habilitar extensões exigidas pelo baseline
+      run: 'psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -q <<''SQL''
+
+        create schema if not exists extensions;
+
+        create extension if not exists "uuid-ossp" with schema extensions;
+
+        create extension if not exists pgcrypto with schema extensions;
+
+        create extension if not exists vector with schema public;
+
+        create extension if not exists citext with schema public;
+
+        create extension if not exists pg_trgm with schema public;
+
+        SQL
+
+        '
+    - name: Aplicar o baseline.sql (o mesmo que o install.sh do kit aplica)
+      run: "psql \"postgresql://postgres:postgres@127.0.0.1:54322/postgres\" \\\n  -v ON_ERROR_STOP=1 -q -f supabase/baseline.sql\n"
+    - name: Reiniciar o Realtime (a publication nasceu no passo anterior)
+      run: "IDS=$(docker ps -q --filter name=supabase_realtime)\nif [ -z \"$IDS\" ]; then\n  echo \"::error::Nenhum container supabase_realtime — o stack não subiu como esperado.\"\n  exit 1\nfi\ndocker restart $IDS\n# Espera ficar saudável: seguir sem isso devolve o mesmo silêncio que\n# este passo existe para eliminar, só que mais tarde e sem explicação.\nfor i in $(seq 1 30); do\n  estado=$(docker inspect -f '{{.State.Health.Status}}' $IDS 2>/dev/null || echo desconhecido)\n  [ \"$estado\" = \"healthy\" ] && { echo \"realtime saudável em ~$((i*2))s\"; break; }\n  sleep 2\ndone\ndocker inspect -f '{{.State.Health.Status}}' $IDS\n"
+    - name: Exportar credenciais do stack local
+      run: "supabase status -o env > /tmp/sb.env\n{\n  echo \"NEXT_PUBLIC_SUPABASE_URL=$(grep '^API_URL=' /tmp/sb.env | cut -d'\"' -f2)\"\n  echo \"NEXT_PUBLIC_SUPABASE_ANON_KEY=$(grep '^ANON_KEY=' /tmp/sb.env | cut -d'\"' -f2)\"\n  echo \"SUPABASE_SERVICE_ROLE_KEY=$(grep '^SERVICE_ROLE_KEY=' /tmp/sb.env | cut -d'\"' -f2)\"\n} >> \"$GITHUB_ENV\"\n"
+    - name: Gerar o .env.e2e (ambiente da suíte)
+      run: pnpm e2e:env
+    - name: Publicar o .env.e2e no ambiente do job
+      run: grep -vE '^[[:space:]]*(#|$)' .env.e2e >> "$GITHUB_ENV"
+    - name: Build de produção (com o ambiente do E2E)
+      run: pnpm e2e:build
+      env:
+        NEXT_TELEMETRY_DISABLED: '1'
+        SENTRY_DSN: 'off'
+    - name: Instalar o browser
+      run: pnpm exec playwright install --with-deps chromium
+    - name: Semear credenciais de teste
+      run: 'cp .env.e2e .env.local
+
+        pnpm exec tsx scripts/seed-e2e-credentials.ts
+
+        '
+    - name: Semear as fixtures que as specs não semeiam sozinhas
+      run: 'pnpm exec tsx scripts/seed-e2e-escalacao.ts
+
+        pnpm exec tsx --env-file=.env.local scripts/seed-e2e-capacidades-ausentes.ts
+
+        pnpm exec tsx scripts/seed-e2e-followup-agent.ts
+
+        # O catálogo da OpenRouter não existe em banco fresco (o baseline
+
+        # semeia só anthropic/openai/google; os demais vêm do cron diário, que
+
+        # busca na internet). Sem esta linha, `prova-painel-provedores` mede a
+
+        # sorte do ambiente em vez da tela.
+
+        pnpm exec tsx scripts/seed-e2e-catalogo-openrouter.ts
+
+        '
+    - name: Reproduzir o teste que falhou, três vezes, sem retry
+      run: 'pnpm exec playwright test tests/e2e/followup-builder.spec.ts --grep "fluxo completo: montar" --repeat-each=3 --reporter=line,html'
+      env:
+        AUTH_RATE_LIMIT_LOGIN_IP: '10000'
+        SENTRY_DSN: 'off'
+        AUTH_RATE_LIMIT_LOGIN_IDENT: '10000'
+    - uses: actions/upload-artifact@v7
+      if: always()
+      with:
+        name: audit-pr4-${{ matrix.variante }}
+        path: 'playwright-report/
+
+          test-results/
+
+          audit-deps/
+
+          '
+        retention-days: 7
+    name: isolar (${{ matrix.variante }})
